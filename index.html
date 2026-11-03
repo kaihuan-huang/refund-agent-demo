@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101315">
 <title>Refund Agent Demo · Kaihuan Huang</title>
 <meta name="description" content="An LLM agent that can look up payments and propose refunds but can't move money: fixed checks, human approval, and a hash-chained ledger.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230B5CAD'/%3E%3Cpath d='M10 12h12M10 16h8M10 20h5' stroke='%23FDE68A' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
@@ -12,16 +15,19 @@
   --accent:#0B5CAD;--me:#DCEBFA;--me-ink:#0B3F75;--ok:#1E7A45;--ok-bg:#E3F4EA;--bad:#B42318;--bad-bg:#FDECEA;--warn:#8A5A00;--warn-bg:#FFF4D6;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#101315;--ink:#E6EAEC;--ink-2:#C2CACD;--muted:#98A2A6;--line:#2A3134;--panel:#181D1F;
-  --accent:#6CB2F5;--me:#16304A;--me-ink:#B9DAFB;--ok:#5BC98A;--ok-bg:#12291D;--bad:#F97066;--bad-bg:#3A1714;--warn:#F5C451;--warn-bg:#33280C;
+  --accent:#6CB2F5;--me:#16304A;--me-ink:#B9DAFB;--ok:#5BC98A;--ok-bg:#12291D;--bad:#F97066;--bad-bg:#3A1714;--warn:#F5C451;--warn-bg:#33280C;color-scheme:dark;
 }}
 :root[data-theme="dark"]{
   --bg:#101315;--ink:#E6EAEC;--ink-2:#C2CACD;--muted:#98A2A6;--line:#2A3134;--panel:#181D1F;
-  --accent:#6CB2F5;--me:#16304A;--me-ink:#B9DAFB;--ok:#5BC98A;--ok-bg:#12291D;--bad:#F97066;--bad-bg:#3A1714;--warn:#F5C451;--warn-bg:#33280C;
+  --accent:#6CB2F5;--me:#16304A;--me-ink:#B9DAFB;--ok:#5BC98A;--ok-bg:#12291D;--bad:#F97066;--bad-bg:#3A1714;--warn:#F5C451;--warn-bg:#33280C;color-scheme:dark;
 }
 *{box-sizing:border-box}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding:48px 16px 64px}
 main{max-width:960px;margin:0 auto}
@@ -37,18 +43,22 @@ pre{font-family:var(--mono);font-size:.82rem;background:var(--panel);border:1px 
 .badge{display:inline-block;font-size:.8rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--ink-2)}
 .muted{color:var(--muted);font-size:.88rem}
 button,input,select{font:inherit}
-button{font-size:.88rem;background:transparent;color:var(--ink-2);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer}
+button{font-size:.88rem;background:transparent;color:var(--ink-2);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:transform 160ms var(--ease-out),background-color 150ms ease,border-color 150ms ease}
+button:not([disabled]):active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){button:not(.primary):not([aria-pressed="true"]):not([disabled]):hover{background:var(--panel);border-color:var(--muted)}button.primary:not([disabled]):hover{filter:brightness(1.08)}}
 button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 button[disabled]{opacity:.5;cursor:not-allowed}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 input,select{font-size:.92rem;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+@media (pointer:coarse){input,select{font-size:16px}}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
 .card{border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
 .layout{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
 @media (max-width:800px){.layout{grid-template-columns:minmax(0,1fr)}}
-.chat{display:flex;flex-direction:column;gap:8px;min-height:240px;max-height:520px;overflow-y:auto}
-.msg{max-width:90%;padding:8px 12px;border-radius:12px;white-space:pre-wrap;word-break:break-word;font-size:.93rem}
+.chat{display:flex;flex-direction:column;gap:8px;min-height:240px;max-height:520px;overflow-y:auto;overscroll-behavior:contain}
+.msg{max-width:90%;padding:8px 12px;border-radius:12px;white-space:pre-wrap;word-break:break-word;font-size:.93rem;transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out)}
+@starting-style{.msg{opacity:0;transform:translateY(4px)}}
 .msg.me{align-self:flex-end;background:var(--me);color:var(--me-ink);border-bottom-right-radius:4px}
 .msg.bot{align-self:flex-start;background:var(--panel);border-bottom-left-radius:4px}
 .msg.tool{align-self:stretch;max-width:none;font-family:var(--mono);font-size:.76rem;border:1px dashed var(--line);border-radius:6px;color:var(--ink-2);background:transparent}
@@ -63,18 +73,31 @@ input,select{font-size:.92rem;color:var(--ink);background:var(--panel);border:1p
 .proposal{border-top:1px solid var(--line);padding:10px 0}
 .proposal:first-child{border-top:0;padding-top:0}
 .tabs{display:flex;flex-wrap:wrap;gap:6px}
-.tbl{overflow-x:auto}
+.tbl{overflow-x:auto;overscroll-behavior-x:contain}
 table{border-collapse:collapse;width:100%;font-size:.84rem}
+td:first-child{font-variant-numeric:tabular-nums}
 th,td{text-align:left;padding:6px 10px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-weight:600;color:var(--muted);font-size:.74rem;letter-spacing:.03em}
 td.hash{font-family:var(--mono);font-size:.74rem;color:var(--muted);white-space:nowrap}
+@media (max-width:560px){
+  .tbl table,.tbl tbody{display:block}
+  .tbl thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .tbl tr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:10px;row-gap:2px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .tbl td{border:0;padding:0}
+  .tbl td:nth-child(1){grid-row:1;grid-column:1;color:var(--muted)}
+  .tbl td:nth-child(2){grid-row:1;grid-column:2}
+  .tbl td:nth-child(5){grid-row:1;grid-column:3}
+  .tbl td:nth-child(3){grid-row:2;grid-column:2/-1;color:var(--muted);overflow-wrap:anywhere}
+  .tbl td:nth-child(4){grid-row:3;grid-column:2/-1}
+}
 .log{list-style:none;margin:0;padding:0;font-size:.9rem}
 .log li{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--line);align-items:baseline}
 .result{margin-top:10px;font-size:.92rem;padding:10px 12px;border-radius:8px}
 .result.ok{background:var(--ok-bg);color:var(--ok)}
 .result.bad{background:var(--bad-bg);color:var(--bad)}
 .plain li{margin-bottom:8px}
-.status{font-size:.88rem;color:var(--muted)}
+.status{font-size:.88rem;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.msg{transition:opacity 180ms ease}@starting-style{.msg{transform:none}}button:not([disabled]):active{transform:none}}
 footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
 </style>
 </head>
@@ -95,7 +118,7 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);font-si
         <p class="status" id="who"></p>
         <div class="chat" id="chat" aria-live="polite"></div>
         <form class="row" id="liveForm" hidden>
-          <input type="text" id="liveInput" placeholder="Write as the customer" aria-label="Customer message" style="flex:1 1 220px">
+          <input type="text" id="liveInput" placeholder="Write as the customer" aria-label="Customer message" enterkeyhint="send" style="flex:1 1 220px">
           <button type="submit" class="primary">Send</button>
         </form>
       </div>
@@ -113,8 +136,8 @@ footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);font-si
     <pre>ollama pull qwen2.5:7b
 OLLAMA_ORIGINS="https://kaihuan-huang.github.io" ollama serve</pre>
     <div class="row">
-      <input type="text" id="endpoint" value="http://localhost:11434" aria-label="Ollama address" style="flex:1 1 200px">
-      <input type="text" id="model" value="qwen2.5:7b" aria-label="Model" style="flex:1 1 140px">
+      <input type="text" id="endpoint" autocapitalize="none" autocorrect="off" spellcheck="false" value="http://localhost:11434" aria-label="Ollama address" style="flex:1 1 200px">
+      <input type="text" id="model" autocapitalize="none" autocorrect="off" spellcheck="false" value="qwen2.5:7b" aria-label="Model" style="flex:1 1 140px">
       <select id="customer" aria-label="Signed-in customer"><option value="jordan">Signed in as Jordan Lee</option><option value="chen">Signed in as 陈晨</option></select>
       <button type="button" class="primary" id="goLive">Start a live conversation</button>
     </div>
@@ -126,8 +149,8 @@ OLLAMA_ORIGINS="https://kaihuan-huang.github.io" ollama serve</pre>
     <p class="muted">Send your own <code>propose_refund</code> call, as a model might, and see what the checks do with it.</p>
     <div class="row">
       <select id="tCustomer" aria-label="Customer"><option value="jordan">Jordan Lee (owns P-1)</option><option value="chen">陈晨 (owns P-2)</option></select>
-      <input type="text" id="tPayment" value="P-2" aria-label="Payment id" style="width:80px">
-      <input type="text" id="tAmount" value="500" aria-label="Amount in dollars" style="width:100px">
+      <input type="text" id="tPayment" autocapitalize="none" autocorrect="off" spellcheck="false" value="P-2" aria-label="Payment id" style="width:80px">
+      <input type="text" id="tAmount" autocorrect="off" spellcheck="false" value="500" aria-label="Amount in dollars" style="width:100px">
       <input type="text" id="tReason" value="admin override" aria-label="Reason" style="flex:1 1 160px">
       <button type="button" id="tGo">Propose</button>
     </div>
@@ -275,7 +298,7 @@ OLLAMA_ORIGINS="https://kaihuan-huang.github.io" ollama serve</pre>
     $("who").textContent = `Live · ${$("model").value.trim()} · signed in as ${A.CUSTOMERS[$("customer").value].name}`;
     $("liveForm").hidden = false; $("liveInput").focus();
     $("liveStatus").textContent = "Live conversation started. Write below the chat.";
-    document.getElementById("conv").scrollIntoView({ behavior: "smooth" });
+    document.getElementById("conv").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   });
   $("liveForm").addEventListener("submit", async (e) => {
     e.preventDefault();
